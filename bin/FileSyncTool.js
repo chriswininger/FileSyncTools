@@ -23,33 +23,58 @@ _.extend(FileSyncTool.prototype, {
 	   return this[command].call(this, commandArray)
    },
 	listMissingFiles: function (syncPath1, syncPath2, complete) {
-		var files1 = [];
-		/*var _processFiles = _.after(2, function (){
-			_.each(files1, function (file) {
+		var self = this,
+			files1 = {},
+			files2 = {};
 
-			});
-			_.each(files2, function (file) {
+		var _processFiles = function (files, _complete) {
+			var rtnFiles = {};
 
+			var _doneProcessing = _.after(files.length, function () {
+				_complete(null, rtnFiles);
 			});
-		});*/
-		var _processFiles = function (files) {
+			if (files.length === 0) return _complete(null, []);
 			_.each(files, function (file) {
 				console.info('processing: ' + file);
 				fs.stat(file, function (err, stat) {
-
+					if (stat.isDirectory()) {
+						self.listMissingFiles(file, function (err, files) {
+							_.each(files, function (file) {
+								rtnFiles[file] = file;
+							});
+							_doneProcessing();
+						});
+					} else {
+						// TODO (CAW): make array for duplicates
+						rtnFiles[file] = file;
+						_doneProcessing();
+					}
 				});
 			});
 		};
 
+		var _processedBothSets = _.after(2, function  () {
+			// begin looking for differences
+			console.log('files1: ' + JSON.stringify(files1));
+			console.log('files2: ' + JSON.stringify(files2));
+
+		});
+
 		fs.readdir(syncPath1, function (err, files){
 			if (err) return _errorAndExit('could not read directory ' + syncPath1);
 			files1 = files;
-			_processFiles(files);
+			_processFiles(files, function (err, files) {
+				_processedBothSets();
+				files1 = files;
+			});
 		});
 		fs.readdir(syncPath2, function (err, files){
 			if (err) return _errorAndExit('could not read directory ' + syncPath2);
 
-			_processFiles(files);
+			_processFiles(files, function (err, files) {
+				_processedBothSets();
+				files2 = files;
+			});
 		});
 	}
 });
