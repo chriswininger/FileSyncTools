@@ -1,8 +1,10 @@
 {
     "name": "FileSyncTools",
     "version": "0.0.1",
+	"bin": "./bin/FileSyncTools.js",
     "dependencies": {
         "underscore": "*",
         "nconf": "*"
-    }
+    },
+	"main": "index.js"
 }
