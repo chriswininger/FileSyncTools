@@ -13,8 +13,8 @@ var commands = {
 		if (!path) return _errorAndExit(usageStatement);
 		fileSyncTools.listFilesRecursive(path, function (err, files) {
 			if (err) return _errorAndExit('error: ' + err);
-			_.each(files, function (file, fullPath) {
-				console.log(fullPath + ':' + file.fileName);
+			_.each(files, function (file) {
+				console.log(file.fullPath + ':' + file.fileName);
 			});
 		});
 	},
