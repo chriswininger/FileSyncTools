@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// TODO (CAW): Add CopyMissing and add flag to indicate how much of the directory will be coppies (i.e just copy missing file to root of new folder or take folder up on level etc..)
 /**
  * FileSyncTool.js
  * Author: Christopher A Wininger
