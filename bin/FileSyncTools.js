@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * FileSyncTool.js
+ * Author: Christopher A Wininger
+ * Date: 8/30/2013
+ *
+ * A command line interface to the FileSyncTools API
+ *
+*/
 var fs = require('fs'),
 	_ = require('underscore'),
 	nconf = require('nconf'),
