@@ -2,7 +2,8 @@
 var fs = require('fs'),
 	_ = require('underscore'),
 	nconf = require('nconf'),
-	FileSyncTools = require(__dirname + '/../lib/FileSyncTools.js');
+	FileSyncTools = require(__dirname + '/../lib/FileSyncTools.js'),
+	clc = require("cli-color");
 
 var usageStatement = 'invalid arguments\n usage: FileSyncTool command [--flags] [args]';
 
@@ -20,17 +21,16 @@ var commands = {
 	},
 	listMissingFiles: function (path1, path2) {
 		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.listFilesRecursive(path1, function (err, files) {
+		fileSyncTools.listMissingFiles(path1, path2, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
-			_.each(files, function (file, fullPath) {
-				console.log('files1: ' + fullPath + ':' + file.fileName);
-			});
+			_printFiles(files);
 		});
-		fileSyncTools.listFilesRecursive(path2, function (err, files) {
+	},
+	listDuplicateFiles: function (path1, path2) {
+		if (!(path1 || path2)) return _errorAndExit(usageStatement);
+		fileSyncTools.listDuplicateFiles(path1, path2, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
-			_.each(files, function (file, fullPath) {
-				console.log('files2: ' + fullPath + ':' + file.fileName);
-			});
+			_printFiles(files);
 		});
 	}
 };
@@ -49,6 +49,12 @@ return commands[command].apply(this, commandArray)
 
 // ---- Helper Functions ----
 function _errorAndExit(errMsg) {
-	console.error(errMsg);
+	console.error(clc.red(errMsg));
 	return process.exit(1);
+}
+
+function _printFiles(files) {
+	_.each(files, function (file) {
+		console.log(clc.green.bold(file.fileName) + clc.blue(' (' + file.fullPath + ')'));
+	});
 }

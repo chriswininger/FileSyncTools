@@ -4,7 +4,9 @@
 	"bin": "./bin/FileSyncTools.js",
     "dependencies": {
         "underscore": "*",
-        "nconf": "*"
+        "nconf": "*",
+		"debug": "*",
+		"cli-color": "*"
     },
 	"main": "index.js"
 }
