@@ -8,27 +8,29 @@ var fs = require('fs'),
 var usageStatement = 'invalid arguments\n usage: FileSyncTool command [--flags] [args]';
 
 var fileSyncTools = new FileSyncTools();
+// --- Flag Constants ---
+var FLAGS = {
+	followSymbolicLinks: 'followSymbolicLinks'
+};
 // --- Command Definitions for console ---
 var commands = {
 	listFilesRecursive: function (path) {
 		if (!path) return _errorAndExit(usageStatement);
-		fileSyncTools.listFilesRecursive(path, function (err, files) {
+		fileSyncTools.listFilesRecursive(path, flags[FLAGS.followSymbolicLinks], function (err, files) {
 			if (err) return _errorAndExit('error: ' + err);
-			_.each(files, function (file) {
-				console.log(file.fullPath + ':' + file.fileName);
-			});
+			_printFiles(files);
 		});
 	},
 	listMissingFiles: function (path1, path2) {
 		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.listMissingFiles(path1, path2, function (err, files){
+		fileSyncTools.listMissingFiles(path1, path2, flags[FLAGS.followSymbolicLinks], function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
 	},
 	listDuplicateFiles: function (path1, path2) {
 		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.listDuplicateFiles(path1, path2, function (err, files){
+		fileSyncTools.listDuplicateFiles(path1, path2, flags[FLAGS.followSymbolicLinks], function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
@@ -37,10 +39,22 @@ var commands = {
 
 // --- Execute Requested Command ----
 var commandArray = [];
+var flags = {};
 _.each(process.argv, function (param, key) {
 	// skip first two params (node and js file)
 	if (key < 2) return;
-	if (param.indexOf('-') !== 0) commandArray.push(param)
+	if (param.indexOf('-') !== 0) {
+		// command
+		commandArray.push(param);
+	} else {
+		// flag
+		switch (param) {
+			case '--followSymbolicLinks':
+			case '-fl':
+				flags[FLAGS.followSymbolicLinks] = true;
+				break;
+		}
+	}
 });
 if (commandArray.length < 1) return _errorAndExit(usageStatement);
 var command = commandArray.shift();
