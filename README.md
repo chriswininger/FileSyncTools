@@ -16,9 +16,9 @@ Usage
 FileSyncTools command [--flags] [params]
 
 commands: 
-   listMissingFiles [--includeSymbolicLinks|-fl] dir2 dir2
-   listDuplicateFiles [--includeSymbolicLinks|-fl] dir2 dir2
-   listFilesRecursive [--includeSymbolicLinks|-fl] dir
+   1. listMissingFiles [--includeSymbolicLinks|-fl] dir2 dir2
+   2. listDuplicateFiles [--includeSymbolicLinks|-fl] dir2 dir2
+   3. listFilesRecursive [--includeSymbolicLinks|-fl] dir
 
 example:
   1. FileSyncTools listMissingFiles ~/Music /media/networkshare/Music

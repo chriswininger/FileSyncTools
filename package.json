@@ -3,10 +3,11 @@
     "version": "0.0.1",
 	"bin": "./bin/FileSyncTools.js",
     "dependencies": {
-        "underscore": "*",
-        "nconf": "*",
-		"debug": "*",
-		"cli-color": "*"
+        "underscore": "~1.6.0",
+        "mkdirp": "~0.5.0",
+		"debug": "~1.0.4",
+		"cli-color": "~0.3.2",
+		"cp": "~0.1.1"
     },
 	"main": "index.js"
 }

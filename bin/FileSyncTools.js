@@ -10,7 +10,6 @@
 */
 var fs = require('fs'),
 	_ = require('underscore'),
-	nconf = require('nconf'),
 	FileSyncTools = require(__dirname + '/../lib/FileSyncTools.js'),
 	clc = require("cli-color");
 
@@ -19,27 +18,35 @@ var usageStatement = 'invalid arguments\n usage: FileSyncTool command [--flags] 
 var fileSyncTools = new FileSyncTools();
 // --- Flag Constants ---
 var FLAGS = {
-	followSymbolicLinks: 'followSymbolicLinks'
+	followSymbolicLinks: 'followSymbolicLinks',
+	verbose: 'verbose'
 };
 // --- Command Definitions for console ---
 var commands = {
-	listFilesRecursive: function (path) {
+	copyMissingFiles: function (path1, path2, options) {
+		if (!(path1 || path2)) return _errorAndExit(usageStatement);
+		fileSyncTools.copyMissing(path1, path2, options, function (err) {
+			if (err) return _errorAndExit('error: ' + err);
+			console.info(clc.green.bold('complete files have been copied'));
+		});
+	},
+	listFilesRecursive: function (path, options) {
 		if (!path) return _errorAndExit(usageStatement);
-		fileSyncTools.listFilesRecursive(path, flags[FLAGS.followSymbolicLinks], function (err, files) {
+		fileSyncTools.listFilesRecursive(path, options, function (err, files) {
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
 	},
-	listMissingFiles: function (path1, path2) {
+	listMissingFiles: function (path1, path2, options) {
 		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.listMissingFiles(path1, path2, flags[FLAGS.followSymbolicLinks], function (err, files){
+		fileSyncTools.listMissingFiles(path1, path2, options, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
 	},
-	listDuplicateFiles: function (path1, path2) {
+	listDuplicateFiles: function (path1, path2, options) {
 		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.listDuplicateFiles(path1, path2, flags[FLAGS.followSymbolicLinks], function (err, files){
+		fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
@@ -47,6 +54,7 @@ var commands = {
 };
 
 // --- Execute Requested Command ----
+// parse request
 var commandArray = [];
 var flags = {};
 _.each(process.argv, function (param, key) {
@@ -62,12 +70,21 @@ _.each(process.argv, function (param, key) {
 			case '-fl':
 				flags[FLAGS.followSymbolicLinks] = true;
 				break;
+			case '--verbose':
+				flags[FLAGS.verbose] = true;
+				break;
 		}
 	}
 });
 if (commandArray.length < 1) return _errorAndExit(usageStatement);
 var command = commandArray.shift();
 if (!commands[command]) return _errorAndExit('unrecognized command');
+// append options
+commandArray.push({
+	followSymbolic: flags[FLAGS.followSymbolicLinks]
+});
+fileSyncTools.setVerbose(!!flags[FLAGS.verbose]);
+// perform requested command
 return commands[command].apply(this, commandArray)
 
 // ---- Helper Functions ----
