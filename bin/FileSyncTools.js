@@ -23,11 +23,21 @@ var FLAGS = {
 };
 // --- Command Definitions for console ---
 var commands = {
+	testProgress: function () {
+		var bar = new ProgressBar('   copying [:bar]  :percent', { width: 10, total: 10 });
+		var timer = setInterval(function () {
+			bar.tick();
+			if (bar.complete) {
+				console.log('\ncomplete\n');
+				clearInterval(timer);
+			}
+		}, 100);
+	},
 	copyMissingFiles: function (path1, path2, options) {
 		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.copyMissing(path1, path2, options, function (err) {
+		fileSyncTools.copyMissing(path1, path2, options, function (err, numFilesCoppied) {
 			if (err) return _errorAndExit('error: ' + err);
-			console.info(clc.green.bold('complete files have been copied'));
+			console.info(clc.green.bold('complete ' + numFilesCoppied + ' files have been copied'));
 		});
 	},
 	listFilesRecursive: function (path, options) {
