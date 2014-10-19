@@ -18,9 +18,11 @@ var usageStatement = 'invalid arguments\n usage: FileSyncTool command [--flags] 
 var fileSyncTools = new FileSyncTools();
 // --- Flag Constants ---
 var FLAGS = {
-	followSymbolicLinks: 'followSymbolicLinks',
-	verbose: 'verbose'
+	followSymbolicLinks: 'followSymbolic',
+	verbose: 'verbose',
+    includeHash: 'includeHash'
 };
+
 // --- Command Definitions for console ---
 var commands = {
 	testProgress: function () {
@@ -83,16 +85,20 @@ _.each(process.argv, function (param, key) {
 			case '--verbose':
 				flags[FLAGS.verbose] = true;
 				break;
+            case '--includeHash':
+            case '-h':
+                flags[FLAGS.includeHash] = true;
+                break;
 		}
 	}
 });
 if (commandArray.length < 1) return _errorAndExit(usageStatement);
 var command = commandArray.shift();
 if (!commands[command]) return _errorAndExit('unrecognized command');
+
 // append options
-commandArray.push({
-	followSymbolic: flags[FLAGS.followSymbolicLinks]
-});
+commandArray.push(flags);
+
 fileSyncTools.setVerbose(!!flags[FLAGS.verbose]);
 // perform requested command
 return commands[command].apply(this, commandArray)
