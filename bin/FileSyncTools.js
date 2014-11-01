@@ -111,6 +111,10 @@ function _errorAndExit(errMsg) {
 
 function _printFiles(files) {
 	_.each(files, function (file) {
-		console.log(clc.green.bold(file.fileName) + clc.blue(' (' + file.fullPath + ')'));
+		console.log(
+            clc.green.bold(file.fileName) +
+            clc.blue(' (' + file.fullPath + ')' +
+            (file.warning ? clc.red('\n\thash: ' + file.warning + '(' + file.fileHash + ')') : '')
+        ));
 	});
 }
