@@ -11,16 +11,20 @@
 var fs = require('fs'),
 	_ = require('underscore'),
 	FileSyncTools = require(__dirname + '/../lib/FileSyncTools.js'),
-	clc = require("cli-color");
+	clc = require("cli-color"),
+    util = require('util');
 
-var usageStatement = 'invalid arguments\n usage: FileSyncTool command [--flags] [args]';
+var TITLE = 'FileSyncTools',
+    invalidArgs = 'invalid arguments\n' + _getUsageStatement();
 
 var fileSyncTools = new FileSyncTools();
 // --- Flag Constants ---
 var FLAGS = {
+    byHash: 'byHash',
 	followSymbolicLinks: 'followSymbolic',
-	verbose: 'verbose',
-    includeHash: 'includeHash'
+    help: 'help',
+    includeHash: 'includeHash',
+    verbose: 'verbose'
 };
 
 // --- Command Definitions for console ---
@@ -36,33 +40,56 @@ var commands = {
 		}, 100);
 	},
 	copyMissingFiles: function (path1, path2, options) {
-		if (!(path1 || path2)) return _errorAndExit(usageStatement);
+		if (!(path1 || path2)) return _errorAndExit(invalidArgs);
 		fileSyncTools.copyMissing(path1, path2, options, function (err, numFilesCoppied) {
 			if (err) return _errorAndExit('error: ' + err);
 			console.info(clc.green.bold('complete ' + numFilesCoppied + ' files have been copied'));
 		});
 	},
 	listFilesRecursive: function (path, options) {
-		if (!path) return _errorAndExit(usageStatement);
+		if (!path) return _errorAndExit(invalidArgs);
 		fileSyncTools.listFilesRecursive(path, options, function (err, files) {
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
 	},
 	listMissingFiles: function (path1, path2, options) {
-		if (!(path1 || path2)) return _errorAndExit(usageStatement);
+		if (!(path1 || path2)) return _errorAndExit(invalidArgs);
 		fileSyncTools.listMissingFiles(path1, path2, options, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
 	},
 	listDuplicateFiles: function (path1, path2, options) {
-		if (!(path1 || path2)) return _errorAndExit(usageStatement);
-		fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
+		if (!(path1 && path2)) return _errorAndExit(invalidArgs);
+        if (!_.isObject(options)) {
+            // command used with one path
+            options = path2;
+            path2 = path1;
+        }
+        fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
 			_printFiles(files);
 		});
-	}
+	},
+    listDuplicateFilesByHash: function (path1, path2, options) {
+        if (!(path1 && path2)) return _errorAndExit(invalidArgs);
+        if (!_.isObject(options)) {
+            // command used with one path
+            options = path2;
+            path2 = path1;
+        }
+        options.byHash = true;
+        fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
+            if (err) return _errorAndExit('error: ' + err);
+            _printFiles(files);
+        });
+    },
+    help: function () {
+        var strHelp = '\n' + _getUsageStatement() + '\n\nCommands:\n';
+        strHelp += _getCommandsList();
+        console.info(strHelp);
+    }
 };
 
 // --- Execute Requested Command ----
@@ -86,8 +113,14 @@ _.each(process.argv, function (param, key) {
 				flags[FLAGS.verbose] = true;
 				break;
             case '--includeHash':
-            case '-h':
+            case '-ih':
                 flags[FLAGS.includeHash] = true;
+                break;
+            case '-h':
+            case '--help':
+                flags[FLAGS.help] = true;
+                // just treat this as a command
+                commandArray.push('help');
                 break;
 		}
 	}
@@ -104,6 +137,24 @@ fileSyncTools.setVerbose(!!flags[FLAGS.verbose]);
 return commands[command].apply(this, commandArray)
 
 // ---- Helper Functions ----
+function _getUsageStatement () {
+    var strFlags = '';
+    _.each(FLAGS, function (v, flag) {
+        strFlags += util.format('[--%s]', flag);
+    });
+
+    return util.format('usage: %s %s <command> [<args>]', TITLE, strFlags);
+}
+
+function _getCommandsList () {
+    var strCommands = '';
+    _.each(commands, function (f, command) {
+        strCommands += '   ' + command + '\n';
+    });
+
+    return strCommands;
+}
+
 function _errorAndExit(errMsg) {
 	console.error(clc.red(errMsg));
 	return process.exit(1);

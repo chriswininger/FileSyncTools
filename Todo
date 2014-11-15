@@ -1,0 +1,25 @@
+1 When listing duplicates aggregate all duplicates of a single file and list each path beneath them
+   Test case, set up directory structure as follows
+       [test1]
+          file1
+          file2
+          file3
+          [sub]
+            file2
+            file3
+        [test2]
+            file2
+            file3
+    =>
+        file2
+            /test1/file2
+            /test1/sub/file2
+            /test1/test2/file2
+        file3
+            /test1/file3
+            /test1/sub/file3
+            /test1/test2/file3
+
+2 Create test cases
+    consider implementing fake fs that returns test dir/file structure
+    or if too difficult just make test seed function that creates a test dir/file structure under the spec directory
