@@ -160,12 +160,18 @@ function _errorAndExit(errMsg) {
 	return process.exit(1);
 }
 
-function _printFiles(files) {
-	_.each(files, function (file) {
-		console.log(
-            clc.green.bold(file.fileName) +
-            clc.blue(' (' + file.fullPath + ')' +
-            (file.warning ? clc.red('\n\thash: ' + file.warning + '(' + file.fileHash + ')') : '')
-        ));
+function _printFiles(files, options) {
+    var filteredFiles = {};
+    var combineKey = 'fileName';
+
+
+    _.each(files, function (f) {
+        if (!filteredFiles[f[combineKey]]) filteredFiles[f[combineKey]] = '';
+        filteredFiles[f[combineKey]] += '\n   ' + f.fullPath + (f.warning ? clc.red('-- hash: ' + f.warning + '[' + f.fileHash + ']') : '');
+    });
+
+
+	_.each(filteredFiles, function (filesString, key) {
+		console.log(clc.bold(key) +  filesString);
 	});
 }
