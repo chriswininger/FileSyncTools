@@ -10,7 +10,7 @@
  *   is handled in the CommandExecutor.js file
  *
 */
-var _ = require('underscore'),
+var _ = require('lodash'),
     CommandExecutor = require(__dirname + '/../lib/CommandExecutor.js'),
     FSUtils = require(__dirname + '/../lib/FileSyncUtils');
 
