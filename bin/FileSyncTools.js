@@ -5,85 +5,20 @@
  * Author: Christopher A Wininger
  * Date: 8/30/2013
  *
- * A command line interface to the FileSyncTools API
+ * A command line interface to the FileSyncTools API,
+ *   this is where the arguments are parsed, the execution of commands
+ *   is handled in the CommandExecutor.js file
  *
 */
-var fs = require('fs'),
-	_ = require('underscore'),
-	FileSyncTools = require(__dirname + '/../lib/FileSyncTools.js'),
-	clc = require("cli-color"),
-    util = require('util');
-
-var TITLE = 'FileSyncTools',
-    invalidArgs = 'invalid arguments\n' + _getUsageStatement();
-
-var fileSyncTools = new FileSyncTools();
-// --- Flag Constants ---
-var FLAGS = {
-    byHash: 'byHash',
-	followSymbolicLinks: 'followSymbolic',
-    help: 'help',
-    includeHash: 'includeHash',
-    includeOriginal: 'includeOriginal',
-    verbose: 'verbose'
-};
-
-// --- Command Definitions for console ---
-var commands = {
-	testProgress: function () {
-		var bar = new ProgressBar('   copying [:bar]  :percent', { width: 10, total: 10 });
-		var timer = setInterval(function () {
-			bar.tick();
-			if (bar.complete) {
-				console.log('\ncomplete\n');
-				clearInterval(timer);
-			}
-		}, 100);
-	},
-	copyMissingFiles: function (path1, path2, options) {
-		if (!(path1 || path2)) return _errorAndExit(invalidArgs);
-		fileSyncTools.copyMissing(path1, path2, options, function (err, numFilesCoppied) {
-			if (err) return _errorAndExit('error: ' + err);
-			console.info(clc.green.bold('complete ' + numFilesCoppied + ' files have been copied'));
-		});
-	},
-	listFilesRecursive: function (path, options) {
-		if (!path) return _errorAndExit(invalidArgs);
-		fileSyncTools.listFilesRecursive(path, options, function (err, files) {
-			if (err) return _errorAndExit('error: ' + err);
-			_printFiles(files);
-		});
-	},
-	listMissingFiles: function (path1, path2, options) {
-		if (!(path1 || path2)) return _errorAndExit(invalidArgs);
-		fileSyncTools.listMissingFiles(path1, path2, options, function (err, files){
-			if (err) return _errorAndExit('error: ' + err);
-			_printFiles(files);
-		});
-	},
-	listDuplicateFiles: function (path1, path2, options) {
-		if (!(path1 && path2)) return _errorAndExit(invalidArgs);
-        if (!_.isObject(options)) {
-            // command used with one path
-            options = path2;
-            path2 = path1;
-        }
-        fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
-			if (err) return _errorAndExit('error: ' + err);
-			_printFiles(files, options);
-		});
-	},
-    help: function () {
-        var strHelp = '\n' + _getUsageStatement() + '\n\nCommands:\n';
-        strHelp += _getCommandsList();
-        console.info(strHelp);
-    }
-};
+var _ = require('underscore'),
+    CommandExecutor = require(__dirname + '/../lib/CommandExecutor.js'),
+    FSUtils = require(__dirname + '/../lib/FileSyncUtils');
 
 // --- Execute Requested Command ----
 // parse request
-var commandArray = [];
-var flags = {};
+var commandArray = [],
+    flags = {};
+
 _.each(process.argv, function (param, key) {
 	// skip first two params (node and js file)
 	if (key < 2) return;
@@ -95,90 +30,37 @@ _.each(process.argv, function (param, key) {
 		switch (param) {
             case '--byHash':
             case '--bh':
-                flags[FLAGS.byHash] = true;
+                flags[CommandExecutor.flags.byHash] = true;
                 break;
 			case '--followSymbolicLinks':
 			case '-fl':
-				flags[FLAGS.followSymbolicLinks] = true;
+				flags[CommandExecutor.flags.followSymbolicLinks] = true;
 				break;
 			case '--verbose':
             case '--v':
-				flags[FLAGS.verbose] = true;
+				flags[CommandExecutor.flags.verbose] = true;
 				break;
             case '--includeHash':
             case '-ih':
-                flags[FLAGS.includeHash] = true;
+                flags[CommandExecutor.flags.includeHash] = true;
                 break;
             case '--includeOriginal':
             case '-io':
-                flags[FLAGS.includeOriginal] = true;
+                flags[CommandExecutor.flags.includeOriginal] = true;
                 break;
             case '-h':
             case '--help':
-                flags[FLAGS.help] = true;
+                flags[CommandExecutor.flags.help] = true;
                 // just treat this as a command
                 commandArray.push('help');
                 break;
 		}
 	}
 });
-if (commandArray.length < 1) return _errorAndExit(usageStatement);
+// check that a command was supplied
+if (commandArray.length < 1) return FSUtils.errorAndExit(CommandExecutor.getInvalidArgumentsResponse());
+// pull off command and append flags object
 var command = commandArray.shift();
-if (!commands[command]) return _errorAndExit('unrecognized command');
-
-// append options
 commandArray.push(flags);
-
-fileSyncTools.setVerbose(!!flags[FLAGS.verbose]);
 // perform requested command
-return commands[command].apply(this, commandArray)
-
-// ---- Helper Functions ----
-function _getUsageStatement () {
-    var strFlags = '';
-    _.each(FLAGS, function (v, flag) {
-        strFlags += util.format('[--%s]', flag);
-    });
-
-    return util.format('usage: %s %s <command> [<args>]', TITLE, strFlags);
-}
-
-function _getCommandsList () {
-    var strCommands = '';
-    _.each(commands, function (f, command) {
-        strCommands += '   ' + command + '\n';
-    });
-
-    return strCommands;
-}
-
-function _errorAndExit(errMsg) {
-	console.error(clc.red(errMsg));
-	return process.exit(1);
-}
-
-function _printFiles(files, options) {
-    var options = options || {},
-        filteredFiles = {},
-        combineKey = 'fileName';
-    if (options.byHash) combineKey = 'fileHash';
-
-    _.each(files, function (f) {
-        if (!filteredFiles[f[combineKey]]) {
-            filteredFiles[f[combineKey]] = {
-                fileName: f.fileName,
-                fullPathsString: '\n   ' + f.fullPath + (f.warning ? clc.red('-- hash: ' + f.warning + '[' + f.fileHash + ']') : '')
-            };
-            return;
-        }
-
-        filteredFiles[f[combineKey]].fullPathsString +=  '\n   ' + f.fullPath + (f.warning ? clc.red('-- hash: ' + f.warning + '[' + f.fileHash + ']') : '')
-    });
-
-
-	_.each(filteredFiles, function (fileEntry, key) {
-        var title = fileEntry.fileName;
-        if (options.byHash) title += ' (' + key + ')';
-		console.log(clc.bold(title) +  fileEntry.fullPathsString);
-	});
-}
+return CommandExecutor.executeCommand(command, commandArray, !!flags[CommandExecutor.flags.verbose]);
