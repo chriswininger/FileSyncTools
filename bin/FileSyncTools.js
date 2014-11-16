@@ -24,6 +24,7 @@ var FLAGS = {
 	followSymbolicLinks: 'followSymbolic',
     help: 'help',
     includeHash: 'includeHash',
+    includeOriginal: 'includeOriginal',
     verbose: 'verbose'
 };
 
@@ -69,22 +70,9 @@ var commands = {
         }
         fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
 			if (err) return _errorAndExit('error: ' + err);
-			_printFiles(files);
+			_printFiles(files, options);
 		});
 	},
-    listDuplicateFilesByHash: function (path1, path2, options) {
-        if (!(path1 && path2)) return _errorAndExit(invalidArgs);
-        if (!_.isObject(options)) {
-            // command used with one path
-            options = path2;
-            path2 = path1;
-        }
-        options.byHash = true;
-        fileSyncTools.listDuplicateFiles(path1, path2, options, function (err, files){
-            if (err) return _errorAndExit('error: ' + err);
-            _printFiles(files);
-        });
-    },
     help: function () {
         var strHelp = '\n' + _getUsageStatement() + '\n\nCommands:\n';
         strHelp += _getCommandsList();
@@ -105,16 +93,25 @@ _.each(process.argv, function (param, key) {
 	} else {
 		// flag
 		switch (param) {
+            case '--byHash':
+            case '--bh':
+                flags[FLAGS.byHash] = true;
+                break;
 			case '--followSymbolicLinks':
 			case '-fl':
 				flags[FLAGS.followSymbolicLinks] = true;
 				break;
 			case '--verbose':
+            case '--v':
 				flags[FLAGS.verbose] = true;
 				break;
             case '--includeHash':
             case '-ih':
                 flags[FLAGS.includeHash] = true;
+                break;
+            case '--includeOriginal':
+            case '-io':
+                flags[FLAGS.includeOriginal] = true;
                 break;
             case '-h':
             case '--help':
@@ -161,17 +158,27 @@ function _errorAndExit(errMsg) {
 }
 
 function _printFiles(files, options) {
-    var filteredFiles = {};
-    var combineKey = 'fileName';
-
+    var options = options || {},
+        filteredFiles = {},
+        combineKey = 'fileName';
+    if (options.byHash) combineKey = 'fileHash';
 
     _.each(files, function (f) {
-        if (!filteredFiles[f[combineKey]]) filteredFiles[f[combineKey]] = '';
-        filteredFiles[f[combineKey]] += '\n   ' + f.fullPath + (f.warning ? clc.red('-- hash: ' + f.warning + '[' + f.fileHash + ']') : '');
+        if (!filteredFiles[f[combineKey]]) {
+            filteredFiles[f[combineKey]] = {
+                fileName: f.fileName,
+                fullPathsString: '\n   ' + f.fullPath + (f.warning ? clc.red('-- hash: ' + f.warning + '[' + f.fileHash + ']') : '')
+            };
+            return;
+        }
+
+        filteredFiles[f[combineKey]].fullPathsString +=  '\n   ' + f.fullPath + (f.warning ? clc.red('-- hash: ' + f.warning + '[' + f.fileHash + ']') : '')
     });
 
 
-	_.each(filteredFiles, function (filesString, key) {
-		console.log(clc.bold(key) +  filesString);
+	_.each(filteredFiles, function (fileEntry, key) {
+        var title = fileEntry.fileName;
+        if (options.byHash) title += ' (' + key + ')';
+		console.log(clc.bold(title) +  fileEntry.fullPathsString);
 	});
 }
